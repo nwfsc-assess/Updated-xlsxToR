@@ -87,8 +87,8 @@ xlsxToR <- function(file) {
         character = y[,i],
         numeric = as.numeric(y[,i]),
         date = as.Date(as.numeric(y[,i]), origin="1899-12-30"),
-        time = as.Date(as.numeric(y[,i]), origin="1899-12-30"),
-        datetime = as.Date(as.numeric(y[,i]), origin="1899-12-30"))
+        time = strftime(as.POSIXct(as.numeric(y[,i]), origin="1899-12-30"), format = "%H:%M:%S"),
+        datetime = as.POSIXct(as.numeric(y[,i]), origin="1899-12-30"))
     }) 
     y 
   })
