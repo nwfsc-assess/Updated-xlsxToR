@@ -2,6 +2,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   require(XML)
   require(plyr)
+  require(pbapply)
   
   suppressWarnings(file.remove(tempdir()))
   file.copy(file, tempdir())
@@ -10,7 +11,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   file.rename(new_file, new_file_rename)
   
   unzip(new_file_rename, exdir = tempdir())
-
+  
   # Get OS
   mac <- xmlToList(xmlParse(list.files(
     paste0(tempdir(), "/docProps"), full.name = TRUE, pattern = "app.xml")))
@@ -27,6 +28,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   sheet_names <- do.call("rbind", sheet_names$sheets)
   rownames(sheet_names) <- NULL
   sheet_names <- as.data.frame(sheet_names,stringsAsFactors = FALSE)
+  sheet_names$id <- gsub("\\D", "", sheet_names$id)
   
   # Get column classes
   styles <- xmlToList(xmlParse(list.files(
@@ -37,42 +39,58 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
     function(x) as.data.frame(as.list(x[c("applyNumberFormat", "numFmtId")]),
       stringsAsFactors = FALSE)))
   
-  worksheet_paths <- list.files(paste0(tempdir(), "/xl/worksheets"), 
-    full.name = TRUE, pattern = "xml$")
+  if(!is.null(keep_sheets)) {
+    sheet_names <- sheet_names[sheet_names$name %in% keep_sheets,]
+    
+  }
+    
+  worksheet_paths <- list.files(
+    paste0(tempdir(), "/xl/worksheets"), 
+    full.name = TRUE, 
+    pattern = paste0(
+      "sheet(", 
+      paste(sheet_names$id, collapse = "|"), 
+      ")\\.xml$"))
   
-  worksheets <- lapply(worksheet_paths, function(x) xmlToList(xmlParse(x))$sheetData)
-  worksheets <- lapply(seq_along(worksheets), function(i) {
-    x <- lapply(worksheets[[i]], function(y) {
-      y <- y[names(y) == "c"]
-      y <- lapply(y, function(z) {
-        z <- unlist(z)
-        names(z) <- gsub("\\.?attrs\\.?", "", names(z))
-        as.data.frame(as.list(z), stringsAsFactors = FALSE)
-      })
-      do.call("rbind.fill", y)
+  worksheets <- lapply(worksheet_paths, function(x) xmlRoot(xmlParse(x))[["sheetData"]])
+  
+  worksheets <- pblapply(seq_along(worksheets), function(i) {
+   
+    x <- xpathApply(worksheets[[i]], "//x:c", namespaces = "x", function(node) {
+      c("v" = xmlValue(node[["v"]]), xmlAttrs(node))
     })
-    x <- do.call("rbind.fill", x)
-    x$sheet <- sheet_names[sheet_names$sheetId == i, "name"] 
+    
+    if(length(x) > 0) {
+      
+      x_rows <- unlist(lapply(seq_along(x), function(i) rep(i, length(x[[i]]))))
+      x <- unlist(x)
+      
+      x <- reshape(
+        data.frame(
+          "row" = x_rows,
+          "ind" = names(x),
+          "value" = x,
+          stringsAsFactors = FALSE), 
+        idvar = "row", timevar = "ind", direction = "wide")
+      
+      x$sheet <- sheet_names[sheet_names$id == i, "name"] 
+      colnames(x) <- gsub("^value\\.", "", colnames(x))
+    }
     x
   })
   worksheets <- do.call("rbind.fill", 
     worksheets[sapply(worksheets, class) == "data.frame"])
   
-  entries <- xmlToList(xmlParse(list.files(paste0(tempdir(), "/xl"), 
-    full.name = TRUE, pattern = "sharedStrings.xml$")))
-  entries <- unlist(entries)
-  entries <- entries[names(entries) == "si.t"]
+  entries <- xmlParse(list.files(paste0(tempdir(), "/xl"), full.name = TRUE, 
+    pattern = "sharedStrings.xml$"))
+  entries <- xpathSApply(entries, "//x:t", namespaces = "x", xmlValue)
   names(entries) <- seq_along(entries) - 1
-  
+    
   entries_match <- entries[match(worksheets$v, names(entries))]
   worksheets$v[worksheets$t == "s" & !is.na(worksheets$t)] <- 
     entries_match[worksheets$t == "s"& !is.na(worksheets$t)]
   worksheets$cols <- match(gsub("\\d", "", worksheets$r), LETTERS)
   worksheets$rows <- as.numeric(gsub("\\D", "", worksheets$r))
-  
-  if(!is.null(keep_sheets)) {
-    worksheets <- worksheets[sheet %in% keep_sheets,]
-  }
   
   if(!any(grepl("^s$", colnames(worksheets)))) {
     worksheets$s <- NA
