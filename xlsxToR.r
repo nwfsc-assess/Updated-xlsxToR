@@ -6,14 +6,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   file.copy(file, tempdir())
   new_file <- list.files(tempdir(), full.name = TRUE, pattern = basename(file))
-  file_pattern <- gsub(".*?/(.*?)\\.xlsx", "\\1", file)
-  new_file_rename <- gsub(
-    paste0(file_pattern, "(\\.xlsx)$"), 
-    paste0(file_pattern, ".zip"), 
-    new_file)
-  file.rename(new_file, new_file_rename)    
-  
-  unzip(new_file_rename, exdir = tempdir())
+  unzip(new_file, exdir = tempdir())
   
   # Get OS
   mac <- xmlToList(xmlParse(list.files(
