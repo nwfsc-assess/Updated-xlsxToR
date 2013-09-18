@@ -1,6 +1,6 @@
-require(XML)
-require(plyr)
-require(pbapply)
+library(XML)
+library(plyr)
+library(pbapply)
 
 xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
