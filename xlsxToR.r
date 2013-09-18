@@ -17,7 +17,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   # is handled the same across both platforms. I've kept the original code here
   # commented out in case it can be of use in the future.
   # mac <- xmlToList(xmlParse(list.files(
-  #   paste0(tempdir(), "/docProps"), full.name = TRUE, pattern = "app.xml")))
+  #   paste0(temp_dir, "/docProps"), full.name = TRUE, pattern = "app.xml")))
   # mac <- grepl("Macintosh", mac$Application)
   # if(mac) {
   #   os_origin <- "1899-12-30" # documentation says should be "1904-01-01"
@@ -27,7 +27,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   # Get names of sheets
   sheet_names <- xmlToList(xmlParse(list.files(
-    paste0(tempdir(), "/xl"), full.name = TRUE, pattern = "workbook.xml")))
+    paste0(temp_dir, "/xl"), full.name = TRUE, pattern = "workbook.xml")))
   sheet_names <- do.call("rbind", sheet_names$sheets)
   rownames(sheet_names) <- NULL
   sheet_names <- as.data.frame(sheet_names,stringsAsFactors = FALSE)
@@ -35,7 +35,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   # Get column classes
   styles <- xmlToList(xmlParse(list.files(
-    paste0(tempdir(), "/xl"), full.name = TRUE, pattern = "styles.xml")))
+    paste0(temp_dir, "/xl"), full.name = TRUE, pattern = "styles.xml")))
   styles <- styles$cellXfs[
     sapply(styles$cellXfs, function(x) any(names(x) == "applyNumberFormat"))]
   styles <- do.call("rbind", lapply(styles, 
@@ -48,7 +48,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   }
     
   worksheet_paths <- list.files(
-    paste0(tempdir(), "/xl/worksheets"), 
+    paste0(temp_dir, "/xl/worksheets"), 
     full.name = TRUE, 
     pattern = paste0(
       "sheet(", 
@@ -84,7 +84,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   worksheets <- do.call("rbind.fill", 
     worksheets[sapply(worksheets, class) == "data.frame"])
   
-  entries <- xmlParse(list.files(paste0(tempdir(), "/xl"), full.name = TRUE, 
+  entries <- xmlParse(list.files(paste0(temp_dir, "/xl"), full.name = TRUE, 
     pattern = "sharedStrings.xml$"))
   entries <- xpathSApply(entries, "//x:t", namespaces = "x", xmlValue)
   names(entries) <- seq_along(entries) - 1
