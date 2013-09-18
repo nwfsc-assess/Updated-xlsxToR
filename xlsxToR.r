@@ -4,9 +4,11 @@ require(pbapply)
 
 xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
-  file.copy(file, tempdir())
-  new_file <- list.files(tempdir(), full.name = TRUE, pattern = basename(file))
-  unzip(new_file, exdir = tempdir())
+  temp_dir <- paste0(tempdir(), '/xlsxToRtemp')
+
+  file.copy(file, temp_dir)
+  new_file <- list.files(temp_dir, full.name = TRUE, pattern = basename(file))
+  unzip(new_file, exdir = temp_dir)
   
   # Get OS
   # These lines are included because R documentation states that Excel handles 
