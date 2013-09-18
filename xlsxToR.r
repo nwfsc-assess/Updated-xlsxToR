@@ -1,22 +1,27 @@
+require(XML)
+require(plyr)
+require(pbapply)
+
 xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
-  
-  require(XML)
-  require(plyr)
-  require(pbapply)
   
   file.copy(file, tempdir())
   new_file <- list.files(tempdir(), full.name = TRUE, pattern = basename(file))
   unzip(new_file, exdir = tempdir())
   
   # Get OS
-  mac <- xmlToList(xmlParse(list.files(
-    paste0(tempdir(), "/docProps"), full.name = TRUE, pattern = "app.xml")))
-  mac <- grepl("Macintosh", mac$Application)
-  if(mac) {
-    os_origin <- "1899-12-30" # documentation says should be "1904-01-01"
-  } else {
-    os_origin <- "1899-12-30"
-  }
+  # These lines are included because R documentation states that Excel handles 
+  # date origins differently on Mac than on Windows. However, manual inspection
+  # of Excel files created on Windows and Mac indicated that in fact the origin
+  # is handled the same across both platforms. I've kept the original code here
+  # commented out in case it can be of use in the future.
+  # mac <- xmlToList(xmlParse(list.files(
+  #   paste0(tempdir(), "/docProps"), full.name = TRUE, pattern = "app.xml")))
+  # mac <- grepl("Macintosh", mac$Application)
+  # if(mac) {
+  #   os_origin <- "1899-12-30" # documentation says should be "1904-01-01"
+  # } else {
+  #   os_origin <- "1899-12-30"
+  # }
   
   # Get names of sheets
   sheet_names <- xmlToList(xmlParse(list.files(
