@@ -4,8 +4,9 @@ library(pbapply)
 
 xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
-  temp_dir <- paste0(tempdir(), '/xlsxToRtemp')
-
+  temp_dir <- file.path(tempdir(), "xlsxToRtemp")
+  dir.create(temp_dir)
+  
   file.copy(file, temp_dir)
   new_file <- list.files(temp_dir, full.name = TRUE, pattern = basename(file))
   unzip(new_file, exdir = temp_dir)
@@ -46,7 +47,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
     sheet_names <- sheet_names[sheet_names$name %in% keep_sheets,]
     
   }
-    
+  
   worksheet_paths <- list.files(
     paste0(temp_dir, "/xl/worksheets"), 
     full.name = TRUE, 
@@ -58,7 +59,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   worksheets <- lapply(worksheet_paths, function(x) xmlRoot(xmlParse(x))[["sheetData"]])
   
   worksheets <- pblapply(seq_along(worksheets), function(i) {
-   
+    
     x <- xpathApply(worksheets[[i]], "//x:c", namespaces = "x", function(node) {
       c("v" = xmlValue(node[["v"]]), xmlAttrs(node))
     })
@@ -88,7 +89,7 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
     pattern = "sharedStrings.xml$"))
   entries <- xpathSApply(entries, "//x:t", namespaces = "x", xmlValue)
   names(entries) <- seq_along(entries) - 1
-    
+  
   entries_match <- entries[match(worksheets$v, names(entries))]
   worksheets$v[worksheets$t == "s" & !is.na(worksheets$t)] <- 
     entries_match[worksheets$t == "s"& !is.na(worksheets$t)]
@@ -136,6 +137,8 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   if(length(workbook) == 1) {
     workbook <- workbook[[1]]
+  } else { 
+    names(workbook) <- sheet_names$name
   }
   
   workbook
