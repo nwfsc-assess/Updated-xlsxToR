@@ -37,11 +37,20 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   # Get column classes
   styles <- xmlToList(xmlParse(list.files(
     paste0(temp_dir, "/xl"), full.name = TRUE, pattern = "styles.xml")))
+  styles <- styles$cellXfs[names(styles$cellXfs) == "xf"]
+  styles <- lapply(styles, function(x) x$.attrs)
+  styles <- styles[sapply(styles, function(x) {
+    any(grepl("applyNumberFormat", names(x)))})]
+  styles <- lapply(styles, function(x) {
+    x[grepl("applyNumberFormat|numFmtId", names(x))]})
+  styles <- do.call("rbind", (lapply(styles, 
+    function(x) as.data.frame(as.list(x[c("applyNumberFormat", "numFmtId")]),
+      stringsAsFactors = FALSE))))
+  
+  
   styles <- styles$cellXfs[
     sapply(styles$cellXfs, function(x) any(names(x) == "applyNumberFormat"))]
-  styles <- do.call("rbind", lapply(styles, 
-    function(x) as.data.frame(as.list(x[c("applyNumberFormat", "numFmtId")]),
-      stringsAsFactors = FALSE)))
+  
   
   if(!is.null(keep_sheets)) {
     sheet_names <- sheet_names[sheet_names$name %in% keep_sheets,]
@@ -113,16 +122,22 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
       y_style <- y_style[-1,]
     }
     
-    y_style <- sapply(y_style, 
-      function(x) ifelse(length(unique(x)) == 1, unique(x), NA))
+    y_style <- sapply(y_style, function(x) {
+      out <- names(which.max(table(x)))
+      out[is.null(out)] <- NA
+      out
+    })
+    
     if(length(styles) > 0) {
       y_style <- styles$numFmtId[match(y_style, styles$applyNumberFormat)]
     }
+    
     y_style[y_style %in% 14:17] <- "date"
     y_style[y_style %in% c(18:21, 45:47)] <- "time"
     y_style[y_style %in% 22] <- "datetime"
     y_style[is.na(y_style) & !sapply(y, function(x)any(grepl("\\D", x)))] <- "numeric"
     y_style[is.na(y_style)] <- "character"
+    y_style[!(y_style %in% c("date", "time", "datetime", "numeric"))] <- "character"
     
     y[] <- lapply(seq_along(y), function(i) {
       switch(y_style[i],
