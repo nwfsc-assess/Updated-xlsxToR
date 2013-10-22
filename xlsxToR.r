@@ -35,22 +35,15 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   sheet_names$id <- gsub("\\D", "", sheet_names$id)
   
   # Get column classes
-  styles <- xmlToList(xmlParse(list.files(
-    paste0(temp_dir, "/xl"), full.name = TRUE, pattern = "styles.xml")))
-  styles <- styles$cellXfs[names(styles$cellXfs) == "xf"]
-  styles <- lapply(styles, function(x) x$.attrs)
-  styles <- styles[sapply(styles, function(x) {
-    any(grepl("applyNumberFormat", names(x)))})]
+  styles <- xmlParse(list.files(
+    paste0(temp_dir, "/xl"), full.name = TRUE, pattern = "styles.xml"))
+  styles <- xpathApply(styles, "//x:xf[@applyNumberFormat and @numFmtId]", 
+    namespaces = "x", xmlAttrs)
   styles <- lapply(styles, function(x) {
     x[grepl("applyNumberFormat|numFmtId", names(x))]})
   styles <- do.call("rbind", (lapply(styles, 
     function(x) as.data.frame(as.list(x[c("applyNumberFormat", "numFmtId")]),
       stringsAsFactors = FALSE))))
-  
-  
-  styles <- styles$cellXfs[
-    sapply(styles$cellXfs, function(x) any(names(x) == "applyNumberFormat"))]
-  
   
   if(!is.null(keep_sheets)) {
     sheet_names <- sheet_names[sheet_names$name %in% keep_sheets,]
