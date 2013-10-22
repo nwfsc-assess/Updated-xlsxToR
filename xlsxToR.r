@@ -29,7 +29,9 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   # Get names of sheets
   sheet_names <- xmlToList(xmlParse(list.files(
     paste0(temp_dir, "/xl"), full.name = TRUE, pattern = "workbook.xml")))
-  sheet_names <- do.call("rbind", sheet_names$sheets)
+  sheet_names <- rbind.fill(lapply(sheet_names$sheets, function(x) {
+    as.data.frame(as.list(x), stringsAsFactors = FALSE)
+  }))
   rownames(sheet_names) <- NULL
   sheet_names <- as.data.frame(sheet_names,stringsAsFactors = FALSE)
   sheet_names$id <- gsub("\\D", "", sheet_names$id)
