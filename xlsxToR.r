@@ -91,15 +91,16 @@ xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   entries <- xmlParse(list.files(paste0(temp_dir, "/xl"), full.name = TRUE, 
     pattern = "sharedStrings.xml$"))
-  entries <- xpathSApply(entries, "//x:t", namespaces = "x", xmlValue)
+  entries <- xpathSApply(entries, "//x:si", namespaces = "x", xmlValue)
   names(entries) <- seq_along(entries) - 1
   
-  entries_match <- entries[match(worksheets$v, names(entries))]
-  worksheets$v[worksheets$t == "s" & !is.na(worksheets$t)] <- 
-    entries_match[worksheets$t == "s"& !is.na(worksheets$t)]
+  entries_match <- entries[
+    match(worksheets$v[worksheets$t == "s" & !is.na(worksheets$t)], 
+      names(entries))]
+  worksheets$v[worksheets$t == "s" & !is.na(worksheets$t)] <- entries_match
   worksheets$cols <- match(gsub("\\d", "", worksheets$r), LETTERS)
   worksheets$rows <- as.numeric(gsub("\\D", "", worksheets$r))
-  
+    
   if(!any(grepl("^s$", colnames(worksheets)))) {
     worksheets$s <- NA
   }
