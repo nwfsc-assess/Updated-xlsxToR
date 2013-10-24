@@ -5,7 +5,7 @@ library(pbapply)
 xlsxToR <- function(file, keep_sheets = NULL, header = FALSE) {
   
   temp_dir <- file.path(tempdir(), "xlsxToRtemp")
-  dir.create(temp_dir)
+  suppressWarnings(dir.create(temp_dir))
   
   file.copy(file, temp_dir)
   new_file <- list.files(temp_dir, full.name = TRUE, pattern = basename(file))
