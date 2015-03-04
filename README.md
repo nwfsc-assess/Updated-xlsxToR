@@ -1,4 +1,8 @@
 # Updated-xlsxToR
+
+See the fork off of xlsxToR:
+https://gist.github.com/John-R-Wallace/3eab07a93877e87ec968
+
 I have made substantial additions and bug fixes to the xlsxToR R function. A list of additions and bug fixes are inside the function. An example of usage is: 
 
 test<-xlsxToR("TrawlSurveyDataPackage_Canary_ExploreReducedSurvey_2014.xlsx", keep=c(2,4,6,8), skip=c(0,5,5,5)) 
